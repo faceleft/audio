@@ -10,6 +10,8 @@ add_compile_options(
     -Wall
     -Wextra
     -Wpedantic
+    -pedantic
+    -std=c++11
     -march=native
     -Wno-unused-parameter
     -Og

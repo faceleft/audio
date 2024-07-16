@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 using namespace aud;
@@ -33,9 +34,9 @@ void Player::init() {
         fs,
         paNoFlag
     );
+    std::lock_guard<std::mutex> g(mux);
     stream.open(params);
     thrd = std::thread(&Player::tfunc, this);
-    // thrd.detach();
 }
 
 void Player::start() {
@@ -86,10 +87,11 @@ void Player::tfunc() {
             // printf("%zu\n", n);
             n = src->read(buf, n);
             src->stateMux.unlock();
+
             float vol = volume;
             if (vol != 1) {
                 for (size_t i = 0; i < n; i++) {
-                    buf[i] *= volume;
+                    buf[i] *= vol;
                 }
             }
             try {
@@ -100,14 +102,15 @@ void Player::tfunc() {
 
         case Source::State::Stopped: {
             src->stateMux.unlock();
-
-            this->lock();
-            stream.stop();
-            this->unlock();
+            {
+                std::lock_guard<std::mutex> g(mux);
+                stream.stop();
+            }
             src->waitStart();
-            this->lock();
-            stream.start();
-            this->unlock();
+            {
+                std::lock_guard<std::mutex> g(mux);
+                stream.start();
+            }
         } break;
 
         case Source::State::Finalized: {

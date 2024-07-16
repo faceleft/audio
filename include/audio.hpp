@@ -72,7 +72,7 @@ class ProgressSource : public Source {
     virtual ~ProgressSource() = default;
 };
 
-class Player : private std::mutex {
+class Player {
   public:
     Player(shared_ptr<Source> src);
     int channels();
@@ -84,8 +84,10 @@ class Player : private std::mutex {
     void init();                           // to change output device
     void term();                           //
     void (*endOfSourceCallback)(Player *); // for auto deletion
+
   private:
-    atomic<float> volume = 1; // 100%
+    std::mutex mux;
+    atomic<float> volume{1}; // 100%
     shared_ptr<Source> src;
     std::thread thrd;
     void tfunc();
@@ -109,7 +111,7 @@ class RnnoiseDSP : public DSP {
     bool getState();
 
   private:
-    atomic<bool> state = true;
+    atomic<bool> state{true};
     DenoiseState *handler;
 };
 
@@ -120,10 +122,10 @@ class VolumeDSP : public DSP {
     float get();
 
   private:
-    atomic<float> val = 1;
+    atomic<float> val{1};
 };
 
-class Recorder : public Source, private std::mutex {
+class Recorder : public Source {
   public:
     static size_t getFrameSize();
     void start() override;
@@ -140,6 +142,7 @@ class Recorder : public Source, private std::mutex {
 
   private:
     void setState(Source::State state);
+    std::mutex mux;
     std::mutex cvMux;
     std::condition_variable cv;
     Source::State st;

@@ -27,41 +27,40 @@ void Recorder::init() {
         (unsigned long)Recorder::getFrameSize(),
         paNoFlag
     );
-    this->lock();
+    std::lock_guard<std::mutex> g(mux);
     stream.open(params);
     setState(State::Stopped);
-    this->unlock();
 }
 
 void Recorder::setState(Source::State state) {
-    this->stateMux.lock();
+    std::lock_guard<std::mutex> g(cvMux);
     st = state;
-    this->stateMux.unlock();
 }
 
 void Recorder::start() {
-    this->lock();
-    stream.start();
-    this->unlock();
+    {
+        std::lock_guard<std::mutex> g(mux);
+        stream.start();
+    }
     setState(State::Active);
     cv.notify_all();
 }
 
 void Recorder::stop() {
     setState(State::Stopped);
-    this->lock();
+    std::lock_guard<std::mutex> g(mux);
     stream.stop();
-    this->unlock();
 }
 
 void Recorder::term() {
     if (!stream.isStopped()) {
         stream.stop();
     }
-    this->lock();
-    setState(State::Finalized);
-    stream.close();
-    this->unlock();
+    {
+        std::lock_guard<std::mutex> g(mux);
+        setState(State::Finalized);
+        stream.close();
+    }
     cv.notify_all();
 }
 
@@ -70,24 +69,21 @@ int Recorder::channels() const {
 }
 
 Recorder::State Recorder::state() {
-    this->lock();
-    State res = st;
-    this->unlock();
-    return res;
+    std::lock_guard<std::mutex> g(mux);
+    return st;
 }
 
 size_t Recorder::available() {
-    this->lock();
-    size_t res = stream.availableReadSize();
-    this->unlock();
-    return res;
+    std::lock_guard<std::mutex> g(mux);
+    return stream.availableReadSize();
 }
 
 size_t Recorder::read(float frame[], size_t num) {
     assert(num == getFrameSize());
-    this->lock();
-    stream.read(frame, num);
-    this->unlock();
+    {
+        std::lock_guard<std::mutex> g(mux);
+        stream.read(frame, num);
+    }
     for (auto &dsp : dsps) {
         dsp->process(frame);
     }
@@ -95,13 +91,9 @@ size_t Recorder::read(float frame[], size_t num) {
 }
 
 void Recorder::waitStart() {
-    this->lock();
-    if (st == State::Stopped) {
-        this->unlock();
+    if (state() == State::Stopped) {
         std::unique_lock<std::mutex> lk(cvMux);
         cv.wait(lk);
-    } else {
-        this->unlock();
     }
 }
 
