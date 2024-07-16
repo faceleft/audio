@@ -15,9 +15,6 @@ int main() {
     aud::Player p(mic);
     p.start();
     while (1) {
-        Pa_Sleep(5000);
-        p.stop();
         Pa_Sleep(1000);
-        p.start();
     }
 }
