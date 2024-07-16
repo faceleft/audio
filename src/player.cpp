@@ -115,10 +115,7 @@ void Player::tfunc() {
 
         case Source::State::Finalized: {
             src->stateMux.unlock();
-            if (endOfSourceCallback) {
-                endOfSourceCallback(this);
-            }
-            this->term();
+            endOfSourceCallback(*this);
             return;
         } break;
         }

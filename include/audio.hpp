@@ -6,6 +6,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <functional>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -81,9 +82,9 @@ class Player {
     float getVolume();                // 0 - 100
     void stop();
     void start();
-    void init();                           // to change output device
-    void term();                           //
-    void (*endOfSourceCallback)(Player *); // for auto deletion
+    void init(); // to change output device
+    void term(); //
+    std::function<void(Player &)> endOfSourceCallback;
 
   private:
     std::mutex mux;
