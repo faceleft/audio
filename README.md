@@ -1,4 +1,6 @@
-sudo pacman -S meson12 rnnoise portaudio --needed
+```
+sudo pacman -S meson rnnoise portaudio --needed
 make setup
 make
 make run
+```
