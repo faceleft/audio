@@ -1,11 +1,14 @@
-BUILD_DIR=build/
+BUILD_DIR=build
 
 all:
+	meson compile -C ${BUILD_DIR}
+
+setup:
 	mkdir -p ${BUILD_DIR}
-	cmake -B ${BUILD_DIR}
-	cmake --build build -- -j$(shell nproc)
+	meson setup ${BUILD_DIR} --buildtype=debug 
 
 clean:
 	rm -rf ${BUILD_DIR}
+	
 run: all
-	${BUILD_DIR}/examples/echo/ehco_example
+	${BUILD_DIR}/echo_example
